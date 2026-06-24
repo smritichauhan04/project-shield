@@ -10,7 +10,8 @@ const AuthManager = {
    */
   async login(username, password) {
     try {
-      const base = typeof API_BASE !== "undefined" ? API_BASE : "http://localhost:5000/api";
+      const fallbackBase = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" ? "http://localhost:5000/api" : "/api";
+      const base = typeof API_BASE !== "undefined" ? API_BASE : fallbackBase;
       const res = await fetch(`${base}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

@@ -37,11 +37,14 @@ def get_ist_now():
 
 import numpy as np
 import joblib
+# pyrefly: ignore [missing-import]
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
+# pyrefly: ignore [missing-import]
 from flask_jwt_extended import (
     JWTManager, create_access_token, jwt_required, get_jwt_identity,
 )
+# pyrefly: ignore [missing-import]
 from werkzeug.security import generate_password_hash, check_password_hash
 from sklearn.preprocessing import LabelEncoder
 
