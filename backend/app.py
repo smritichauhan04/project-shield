@@ -177,63 +177,80 @@ def encode_categorical(value: str, categories: list) -> int:
 # THREAT SCORING ENGINE
 # =============================================================================
 
-def compute_threat_score(row: dict) -> dict:
+def compute_threat_scores_batch(rows: list) -> list:
     """
-    Score a single log entry using ML models or rule-based fallback.
-
-    Pipeline:
-      1. Build 18-feature numeric vector from log row
-      2. Scale with MinMaxScaler (if loaded)
-      3. Isolation Forest -> anomaly flag + decision score
-      4. Random Forest    -> attack class label + probabilities
-      5. Composite threat score = base weight + anomaly boost + noise
-
-    Returns:
-        dict with keys: label, severity, threat_score, is_anomaly,
-                        iso_score, probabilities
+    Score a batch of log entries efficiently using ML models.
+    Returns a list of dicts with scoring results.
     """
     models = load_models()
+    if not rows:
+        return []
+
     try:
-        # Build feature vector
-        protocol_enc = encode_categorical(row.get("protocol_type", "tcp"), PROTOCOLS)
-        service_enc  = encode_categorical(row.get("service",        "http"), SERVICES)
-        flag_enc     = encode_categorical(row.get("flag",            "SF"),   FLAGS)
-        num_vals     = [float(row.get(f, 0)) for f in NUMERIC_FEATURES]
-        X_raw        = np.array(num_vals + [protocol_enc, service_enc, flag_enc]).reshape(1, -1)
-        X            = models["scaler"].transform(X_raw) if "scaler" in models else X_raw
+        # Build feature matrix
+        X_raw_list = []
+        for row in rows:
+            protocol_enc = encode_categorical(row.get("protocol_type", "tcp"), PROTOCOLS)
+            service_enc  = encode_categorical(row.get("service", "http"), SERVICES)
+            flag_enc     = encode_categorical(row.get("flag", "SF"), FLAGS)
+            num_vals     = [float(row.get(f, 0)) for f in NUMERIC_FEATURES]
+            X_raw_list.append(num_vals + [protocol_enc, service_enc, flag_enc])
+        
+        X_raw = np.array(X_raw_list)
+        X = models["scaler"].transform(X_raw) if "scaler" in models else X_raw
 
-        # Anomaly detection
+        # Batch Inference
         if "iso" in models:
-            iso_score  = float(models["iso"].decision_function(X)[0])
-            is_anomaly = bool(models["iso"].predict(X)[0] == -1)
+            iso_scores = models["iso"].decision_function(X)
+            is_anomalies = (models["iso"].predict(X) == -1)
         else:
-            iso_score, is_anomaly = 0.0, False
+            iso_scores = np.zeros(len(rows))
+            is_anomalies = np.zeros(len(rows), dtype=bool)
 
-        # Multi-class classification
         if "rf" in models:
-            label       = str(models["rf"].predict(X)[0])
-            proba       = models["rf"].predict_proba(X)[0]
-            label_proba = {c: float(p) for c, p in zip(models["rf"].classes_, proba)}
+            labels = models["rf"].predict(X)
+            probas = models["rf"].predict_proba(X)
         else:
-            label, label_proba = "Normal", {"Normal": 1.0}
+            labels = np.array(["Normal"] * len(rows))
+            probas = np.zeros((len(rows), 1))
 
-        # Composite threat score: base + anomaly boost + realism noise
-        base_score    = THREAT_WEIGHT.get(label, 0)
-        anomaly_boost = max(0, -iso_score * 20) if is_anomaly else 0
-        threat_score  = min(100.0, max(0.0, base_score + anomaly_boost + random.uniform(-3, 3)))
+        # Construct results
+        results = []
+        for i, row in enumerate(rows):
+            label = str(labels[i])
+            iso_score = float(iso_scores[i])
+            is_anomaly = bool(is_anomalies[i])
+            
+            if "rf" in models:
+                label_proba = {c: float(p) for c, p in zip(models["rf"].classes_, probas[i])}
+            else:
+                label_proba = {"Normal": 1.0}
+
+            base_score    = THREAT_WEIGHT.get(label, 0)
+            anomaly_boost = max(0, -iso_score * 20) if is_anomaly else 0
+            threat_score  = min(100.0, max(0.0, base_score + anomaly_boost + random.uniform(-3, 3)))
+
+            results.append({
+                "label":         label,
+                "severity":      SEVERITY_MAP.get(label, "Low"),
+                "threat_score":  round(threat_score, 2),
+                "is_anomaly":    is_anomaly,
+                "iso_score":     round(iso_score, 4),
+                "probabilities": label_proba,
+            })
+        return results
 
     except Exception as exc:
-        print(f"[!] Scoring error: {exc}")
-        label, threat_score, is_anomaly, label_proba, iso_score = "Normal", 0.0, False, {}, 0.0
+        print(f"[!] Batch scoring error: {exc}")
+        return [{
+            "label": "Normal", "severity": "Low", "threat_score": 0.0,
+            "is_anomaly": False, "iso_score": 0.0, "probabilities": {"Normal": 1.0}
+        } for _ in rows]
 
-    return {
-        "label":         label,
-        "severity":      SEVERITY_MAP.get(label, "Low"),
-        "threat_score":  round(threat_score, 2),
-        "is_anomaly":    is_anomaly,
-        "iso_score":     round(iso_score, 4),
-        "probabilities": label_proba,
-    }
+
+def compute_threat_score(row: dict) -> dict:
+    """Fallback single-row scoring for compatibility."""
+    return compute_threat_scores_batch([row])[0]
 
 
 # =============================================================================
@@ -272,8 +289,12 @@ def generate_demo_logs(n: int = 50) -> list:
             "diff_srv_rate":     round(random.uniform(0, 1), 2),
             "dst_host_count":    random.randint(1, 255),
         }
-        entry.update(compute_threat_score(entry))
         entries.append(entry)
+        
+    scores = compute_threat_scores_batch(entries)
+    for entry, score in zip(entries, scores):
+        entry.update(score)
+        
     return entries
 
 
@@ -689,8 +710,11 @@ def upload_logs():
         row["timestamp"] = row.get("timestamp", (now - datetime.timedelta(seconds=i*5)).isoformat()+"Z")
         row["src_ip"]    = row.get("src_ip", f"192.168.{random.randint(0,255)}.{random.randint(1,254)}")
         row["dst_ip"]    = row.get("dst_ip", f"10.0.{random.randint(0,10)}.{random.randint(1,100)}")
-        row.update(compute_threat_score(row))
         processed.append(row)
+
+    scores = compute_threat_scores_batch(processed)
+    for row, score in zip(processed, scores):
+        row.update(score)
 
     append_to_history(processed)
     attacks = [r for r in processed if r.get("label") != "Normal"]

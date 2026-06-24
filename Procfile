@@ -1,1 +1,1 @@
-web: gunicorn --chdir backend app:app
+web: gunicorn --chdir backend --threads 4 app:app
