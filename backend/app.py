@@ -380,12 +380,12 @@ def build_pdf_report(stats: dict, top_threats: list, generated_at: str) -> bytes
     )
     stl      = getSampleStyleSheet()
     elems    = []
-    CYAN     = colors.HexColor("#00ffd5")
-    MUTED    = colors.HexColor("#6b7a99")
-    BORDER   = colors.HexColor("#1e2a45")
-    DARK_BG  = colors.HexColor("#0d1120")
-    DARKER   = colors.HexColor("#0a0e1a")
-    BODY_CLR = colors.HexColor("#c8cfe8")
+    CYAN     = colors.HexColor("#008f77") # Darker cyan for white bg
+    MUTED    = colors.HexColor("#4a5568") # Dark gray
+    BORDER   = colors.HexColor("#e2e8f0") # Light gray borders
+    DARK_BG  = colors.HexColor("#f8fafc") # Very light bg for tables
+    DARKER   = colors.HexColor("#edf2f7") # Slightly darker bg for table headers
+    BODY_CLR = colors.HexColor("#1a202c") # Almost black for body text
 
     H2  = ParagraphStyle("H2S", parent=stl["Heading2"], fontSize=13, textColor=CYAN,
                           fontName="Helvetica-Bold", spaceBefore=12, spaceAfter=4)
@@ -431,7 +431,7 @@ def build_pdf_report(stats: dict, top_threats: list, generated_at: str) -> bytes
                   ParagraphStyle("CVR", fontSize=8, textColor=MUTED, alignment=TA_RIGHT)),
     ]], colWidths=["70%","30%"])
     cover.setStyle(TableStyle([
-        ("BACKGROUND",    (0,0),(-1,-1), colors.HexColor("#070b18")),
+        ("BACKGROUND",    (0,0),(-1,-1), DARKER),
         ("VALIGN",        (0,0),(-1,-1), "MIDDLE"),
         ("TOPPADDING",    (0,0),(-1,-1), 14),
         ("BOTTOMPADDING", (0,0),(-1,-1), 14),
