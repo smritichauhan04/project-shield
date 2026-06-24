@@ -32,6 +32,9 @@ import random
 import datetime
 from typing import Optional
 
+def get_ist_now():
+    return datetime.datetime.utcnow() + datetime.timedelta(hours=5, minutes=30)
+
 import numpy as np
 import joblib
 from flask import Flask, request, jsonify, send_file
@@ -240,7 +243,7 @@ def generate_demo_logs(n: int = 50) -> list:
     Each entry is scored immediately via the threat scoring engine.
     Covers all 5 attack categories with realistic frequency distribution.
     """
-    entries, now = [], datetime.datetime.utcnow()
+    entries, now = [], get_ist_now()
     for i in range(n):
         ts    = now - datetime.timedelta(seconds=i * random.randint(5, 60))
         entry = {
@@ -635,7 +638,7 @@ def health():
         "status":        "ok",
         "models_loaded": bool(_models),
         "log_count":     len(log_history),
-        "timestamp":     datetime.datetime.utcnow().isoformat() + "Z",
+        "timestamp":     get_ist_now().isoformat() + "Z",
         "version":       "1.0.0",
     })
 
@@ -678,7 +681,7 @@ def upload_logs():
     if len(rows) > 5_000:
         return jsonify({"error": "Too many rows -- maximum is 5,000"}), 400
 
-    now, processed = datetime.datetime.utcnow(), []
+    now, processed = get_ist_now(), []
     for i, row in enumerate(rows):
         row["timestamp"] = row.get("timestamp", (now - datetime.timedelta(seconds=i*5)).isoformat()+"Z")
         row["src_ip"]    = row.get("src_ip", f"192.168.{random.randint(0,255)}.{random.randint(1,254)}")
@@ -779,7 +782,7 @@ def generate_report():
     stats       = compute_summary_stats(data)
     top_threats = sorted([r for r in data if r.get("severity") in ("High","Critical")],
                          key=lambda x: x.get("threat_score",0), reverse=True)
-    generated_at = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
+    generated_at = get_ist_now().strftime("%Y-%m-%d %H:%M:%S IST")
 
     if not REPORTLAB_AVAILABLE:
         # Graceful JSON fallback
@@ -800,7 +803,7 @@ def generate_report():
 
     try:
         pdf_bytes = build_pdf_report(stats, top_threats, generated_at)
-        filename  = f"shield_report_{datetime.datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.pdf"
+        filename  = f"shield_report_{get_ist_now().strftime('%Y%m%d_%H%M%S')}.pdf"
         return send_file(
             io.BytesIO(pdf_bytes),
             mimetype      = "application/pdf",
