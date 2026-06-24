@@ -102,14 +102,10 @@ const API = {
     if (contentType.includes("application/pdf")) {
       // PDF: trigger browser download
       const blob     = await res.blob();
-      const url      = URL.createObjectURL(blob);
-      const a        = document.createElement("a");
-      a.href         = url;
-      a.download     = `shield_report_${new Date().toISOString().slice(0,10)}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      const pdfBlob  = new Blob([blob], { type: "application/pdf" });
+      const url      = URL.createObjectURL(pdfBlob);
+      window.open(url, "_blank");
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
     } else {
       // JSON fallback: open in new tab
       const data = await res.json();
