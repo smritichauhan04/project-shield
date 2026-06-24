@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="description" content="Project Shield AI-Powered Security Dashboard — Real-time threat monitoring and anomaly detection"/>
+  <title>Project Shield | Dashboard — CFSS Security</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/style.css"/>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<div class="dash-layout">
+
+  <!-- ══ SIDEBAR ════════════════════════════════════════════════════ -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">🛡️</div>
+      <div>
+        <div class="logo-text gradient-text">Project Shield</div>
+        <div class="logo-sub">CFSS Security Platform</div>
+      </div>
+    </div>
+
+    <nav>
+      <div class="nav-section">
+        <div class="nav-label">Main</div>
+        <div class="nav-item active" data-page="overview">
+          <span class="nav-icon">📊</span>
+          <span class="nav-label-text">Overview</span>
+        </div>
+        <div class="nav-item" data-page="threats">
+          <span class="nav-icon">🚨</span>
+          <span class="nav-label-text">Threats</span>
+          <span class="nav-badge" id="alertBadge" style="display:none">0</span>
+        </div>
+        <div class="nav-item" data-page="logs">
+          <span class="nav-icon">📋</span>
+          <span class="nav-label-text">Log Analysis</span>
+        </div>
+        <div class="nav-item" data-page="upload">
+          <span class="nav-icon">📁</span>
+          <span class="nav-label-text">Upload Logs</span>
+        </div>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-label">Tools</div>
+        <div class="nav-item" data-page="report">
+          <span class="nav-icon">📄</span>
+          <span class="nav-label-text">Report</span>
+        </div>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-label">Info</div>
+        <div class="nav-item" data-page="about">
+          <span class="nav-icon">ℹ️</span>
+          <span class="nav-label-text">About</span>
+        </div>
+      </div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-pill">
+        <div class="user-avatar" id="userAvatar">A</div>
+        <div>
+          <div class="user-name" id="sidebarUsername">User</div>
+          <div class="user-role"  id="sidebarRole">Analyst</div>
+        </div>
+        <button class="btn-logout" id="logoutBtn" title="Logout">⏻</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ══ MAIN CONTENT ═══════════════════════════════════════════════ -->
+  <div class="main-content">
+
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="topbar-title" id="topbarTitle">Security Overview</div>
+      <div class="topbar-status">
+        <div class="status-dot"></div>
+        <span>Live</span>
+      </div>
+      <span style="font-size:0.8rem;color:var(--text-muted)" id="topbarUser"></span>
+      <div class="topbar-threat threat-low" id="threatLevel">🟢 LOW</div>
+      <button class="btn btn-ghost" id="refreshBtn" style="padding:6px 14px">⟳ Refresh</button>
+    </header>
+
+    <!-- ── OVERVIEW PAGE ─────────────────────────────────────────── -->
+    <section class="page-section active content-area" id="page-overview">
+      <h1 style="font-size:1.4rem;font-weight:800;margin-bottom:6px">Security Overview</h1>
+      <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:24px">
+        Real-time AI-powered threat monitoring and anomaly detection
+      </p>
+
+      <!-- Stat Cards -->
+      <div class="stats-grid">
+        <div class="stat-card" style="--accent:var(--cyan);--accent-glow:rgba(0,255,213,0.15)">
+          <span class="stat-icon">📡</span>
+          <div class="stat-value gradient-text" id="statTotal">—</div>
+          <div class="stat-label">Total Events Analyzed</div>
+        </div>
+        <div class="stat-card" style="--accent:var(--red);--accent-glow:rgba(255,61,90,0.15)">
+          <span class="stat-icon">🚨</span>
+          <div class="stat-value" style="color:var(--red)" id="statAttacks">—</div>
+          <div class="stat-label">Attacks Detected</div>
+        </div>
+        <div class="stat-card" style="--accent:var(--green);--accent-glow:rgba(0,230,118,0.15)">
+          <span class="stat-icon">✅</span>
+          <div class="stat-value" style="color:var(--green)" id="statNormal">—</div>
+          <div class="stat-label">Normal Traffic</div>
+        </div>
+        <div class="stat-card" style="--accent:var(--orange);--accent-glow:rgba(255,140,0,0.15)">
+          <span class="stat-icon">📈</span>
+          <div class="stat-value" style="color:var(--orange)" id="statRate">—</div>
+          <div class="stat-label">Attack Rate</div>
+        </div>
+        <div class="stat-card" style="--accent:var(--purple);--accent-glow:rgba(124,58,237,0.15)">
+          <span class="stat-icon">🎯</span>
+          <div class="stat-value" style="color:var(--purple)" id="statAvgScore">—</div>
+          <div class="stat-label">Avg Threat Score</div>
+        </div>
+        <div class="stat-card" style="--accent:var(--red);--accent-glow:rgba(255,61,90,0.15)">
+          <span class="stat-icon">⚡</span>
+          <div class="stat-value" style="color:var(--red)" id="statMaxScore">—</div>
+          <div class="stat-label">Peak Threat Score</div>
+        </div>
+      </div>
+
+      <!-- Charts Row 1 -->
+      <div class="charts-grid">
+
+        <!-- Timeline chart (full width) -->
+        <div class="card chart-wide">
+          <div class="card-header">
+            <span class="card-title">⏱ Threat Score Timeline</span>
+            <span style="font-size:0.75rem;color:var(--cyan)">Last 24 Events</span>
+          </div>
+          <div class="card-body">
+            <div class="chart-container">
+              <canvas id="timelineChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Attack type doughnut -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">🎯 Attack Type Distribution</span>
+          </div>
+          <div class="card-body">
+            <div class="chart-container">
+              <canvas id="attackTypeChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Severity bar -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">⚠️ Severity Breakdown</span>
+          </div>
+          <div class="card-body">
+            <div class="chart-container">
+              <canvas id="severityChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Protocol polar -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">🌐 Protocol Distribution</span>
+          </div>
+          <div class="card-body">
+            <div class="chart-container">
+              <canvas id="protocolChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Gauge + live feed -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">🎯 Overall Threat Level</span>
+          </div>
+          <div class="card-body" style="display:flex;align-items:center;justify-content:center">
+            <div class="gauge-wrapper">
+              <div class="gauge-canvas-wrap" style="position:relative;width:200px;height:140px">
+                <canvas id="gaugeChart" width="200" height="140"></canvas>
+                <div class="gauge-label">
+                  <div class="gauge-value gradient-text" id="gaugeValue">—</div>
+                  <div class="gauge-sub" id="gaugeThreatLabel">THREAT SCORE</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Charts Row 2 -->
+      <div class="charts-grid">
+        <!-- Service bar -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">🔌 Top Services Targeted</span>
+          </div>
+          <div class="card-body">
+            <div class="chart-container" style="height:220px">
+              <canvas id="serviceChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Live event feed -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">📡 Live Event Feed</span>
+            <span style="font-size:0.72rem;color:var(--green)">● Streaming</span>
+          </div>
+          <div class="card-body" style="padding:12px 20px">
+            <div class="live-feed" id="liveFeed">
+              <div style="color:var(--text-muted);text-align:center;padding:24px;font-size:0.85rem">
+                Connecting to live feed...
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="text-align:center;margin-top:8px">
+        <button class="btn btn-ghost" id="generateDemoBtn">
+          ⚡ Generate Demo Traffic
+        </button>
+      </div>
+    </section>
+
+    <!-- ── THREATS PAGE ──────────────────────────────────────────── -->
+    <section class="page-section content-area" id="page-threats">
+      <h1 style="font-size:1.4rem;font-weight:800;margin-bottom:6px">🚨 Active Threats</h1>
+      <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:24px">
+        High & Critical severity events ranked by threat score
+      </p>
+      <div class="card">
+        <div class="card-body" style="padding:0">
+          <div style="overflow-x:auto">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Timestamp</th>
+                  <th>Source IP</th>
+                  <th>Destination IP</th>
+                  <th>Attack Type</th>
+                  <th>Threat Score</th>
+                  <th>Severity</th>
+                  <th>Protocol / Service</th>
+                </tr>
+              </thead>
+              <tbody id="threatsTableBody">
+                <tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:40px">Loading threats...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── LOGS PAGE ─────────────────────────────────────────────── -->
+    <section class="page-section content-area" id="page-logs">
+      <h1 style="font-size:1.4rem;font-weight:800;margin-bottom:6px">📋 Log Analysis</h1>
+      <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:24px">
+        All ingested security events with ML predictions and threat scores
+      </p>
+
+      <!-- Filters -->
+      <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+        <select id="filterLabel" class="form-control" style="width:auto;padding:8px 14px 8px 14px">
+          <option value="">All Attack Types</option>
+          <option value="Normal">Normal</option>
+          <option value="DoS">DoS</option>
+          <option value="Probe">Probe</option>
+          <option value="R2L">R2L</option>
+          <option value="U2R">U2R</option>
+        </select>
+        <select id="filterSeverity" class="form-control" style="width:auto;padding:8px 14px 8px 14px">
+          <option value="">All Severities</option>
+          <option value="Low">Low</option>
+          <option value="Medium">Medium</option>
+          <option value="High">High</option>
+          <option value="Critical">Critical</option>
+        </select>
+      </div>
+
+      <div class="card">
+        <div class="card-body" style="padding:0">
+          <div style="overflow-x:auto">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Timestamp</th>
+                  <th>Src IP</th>
+                  <th>Dst IP</th>
+                  <th>Protocol</th>
+                  <th>Service</th>
+                  <th>Label</th>
+                  <th>Threat Score</th>
+                  <th>Severity</th>
+                  <th>Anomaly</th>
+                </tr>
+              </thead>
+              <tbody id="logsTableBody">
+                <tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:40px">
+                  Click "Log Analysis" in the sidebar to load data
+                </td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-top:1px solid var(--border)">
+          <span style="font-size:0.8rem;color:var(--text-muted)" id="paginationInfo">—</span>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-ghost" id="prevPage">← Prev</button>
+            <button class="btn btn-ghost" id="nextPage">Next →</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── UPLOAD PAGE ───────────────────────────────────────────── -->
+    <section class="page-section content-area" id="page-upload">
+      <h1 style="font-size:1.4rem;font-weight:800;margin-bottom:6px">📁 Upload Security Logs</h1>
+      <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:24px">
+        Upload a CSV log file for AI-powered analysis and threat scoring
+      </p>
+
+      <div style="max-width:600px">
+        <div class="upload-zone" id="uploadZone">
+          <div class="upload-icon">📂</div>
+          <h3>Drop your CSV file here</h3>
+          <p>or click to browse — max 5,000 rows</p>
+          <input type="file" id="fileInput" accept=".csv" style="display:none"/>
+        </div>
+        <div id="uploadProgress" style="display:none;margin-top:16px">
+          <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:8px">Analyzing logs...</div>
+          <div class="progress-wrap">
+            <div class="progress-fill" id="progressFill" style="width:0%"></div>
+          </div>
+        </div>
+        <div id="uploadResult"></div>
+
+        <div style="margin-top:24px">
+          <button class="btn btn-primary" id="uploadBtn">🚀 Analyze Selected File</button>
+        </div>
+
+        <div class="card" style="margin-top:24px">
+          <div class="card-header"><span class="card-title">📄 Expected CSV Format</span></div>
+          <div class="card-body">
+            <div style="font-family:var(--mono);font-size:0.75rem;color:var(--cyan);background:rgba(0,255,213,0.04);padding:14px;border-radius:8px;overflow-x:auto">
+duration,protocol_type,service,flag,src_bytes,dst_bytes,land,wrong_fragment,urgent,hot,num_failed_logins,logged_in,num_compromised,count,srv_count,same_srv_rate,diff_srv_rate,dst_host_count
+0,tcp,http,SF,1000,500,0,0,0,0,0,1,0,1,1,1.0,0.0,255
+            </div>
+            <p style="color:var(--text-muted);font-size:0.8rem;margin-top:12px">
+              Compatible with NSL-KDD and CICIDS dataset formats. Optional fields: timestamp, src_ip, dst_ip.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── REPORT PAGE ──────────────────────────────────────────── -->
+    <section class="page-section content-area" id="page-report">
+      <h1 style="font-size:1.4rem;font-weight:800;margin-bottom:6px">📄 Security Intelligence Report</h1>
+      <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:24px">
+        Generate a professional PDF security report from current log data
+      </p>
+
+      <div class="stats-grid" style="margin-bottom:24px" id="reportStatsGrid">
+        <div class="stat-card" style="--accent:var(--cyan);--accent-glow:rgba(0,255,213,0.15)">
+          <span class="stat-icon">📡</span>
+          <div class="stat-value gradient-text" id="rptTotal">—</div>
+          <div class="stat-label">Total Events</div>
+        </div>
+        <div class="stat-card" style="--accent:var(--red);--accent-glow:rgba(255,61,90,0.15)">
+          <span class="stat-icon">🚨</span>
+          <div class="stat-value" style="color:var(--red)" id="rptAttacks">—</div>
+          <div class="stat-label">Attacks Found</div>
+        </div>
+        <div class="stat-card" style="--accent:var(--orange);--accent-glow:rgba(255,140,0,0.15)">
+          <span class="stat-icon">🎯</span>
+          <div class="stat-value" style="color:var(--orange)" id="rptAvg">—</div>
+          <div class="stat-label">Avg Threat Score</div>
+        </div>
+        <div class="stat-card" style="--accent:var(--red);--accent-glow:rgba(255,61,90,0.15)">
+          <span class="stat-icon">💀</span>
+          <div class="stat-value" style="color:var(--red)" id="rptCritical">—</div>
+          <div class="stat-label">Critical Events</div>
+        </div>
+      </div>
+
+      <div style="max-width:640px">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">📋 Report Contents</span>
+          </div>
+          <div class="card-body">
+            <div style="font-size:0.85rem;line-height:2.2;color:var(--text-muted)">
+              <div>✅ <strong style="color:var(--text)">Executive Summary</strong> — KPI overview and security posture</div>
+              <div>✅ <strong style="color:var(--text)">Threat Statistics</strong> — Attack type distribution and counts</div>
+              <div>✅ <strong style="color:var(--text)">Severity Analysis</strong> — Critical/High/Medium/Low breakdown</div>
+              <div>✅ <strong style="color:var(--text)">Protocol & Service Analysis</strong> — Network layer analysis</div>
+              <div>✅ <strong style="color:var(--text)">Top Critical Threats</strong> — Ranked by threat score</div>
+              <div>✅ <strong style="color:var(--text)">AI/ML Methodology</strong> — Model architecture documentation</div>
+              <div>✅ <strong style="color:var(--text)">Recommendations</strong> — Prioritised security actions</div>
+            </div>
+            <div style="margin-top:20px;display:flex;gap:12px;flex-wrap:wrap">
+              <button class="btn btn-primary" id="downloadReportBtn" style="padding:12px 28px;font-size:0.95rem">
+                ⬇️ Download PDF Report
+              </button>
+              <button class="btn btn-ghost" id="refreshReportStatsBtn" style="padding:12px 20px">
+                ⟳ Refresh Stats
+              </button>
+            </div>
+            <div id="reportStatus" style="margin-top:14px;font-size:0.82rem;color:var(--text-muted)"></div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:16px">
+          <div class="card-header"><span class="card-title">ℹ️ About the Report</span></div>
+          <div class="card-body">
+            <p style="color:var(--text-muted);font-size:0.82rem;line-height:1.8">
+              The report is generated live from the current log history in the system.
+              For a comprehensive report, first generate demo traffic or upload real logs,
+              then download the PDF. Reports are stamped with UTC timestamp and analyst credentials.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── ABOUT PAGE ────────────────────────────────────────────── -->
+    <section class="page-section content-area" id="page-about">
+      <h1 style="font-size:1.4rem;font-weight:800;margin-bottom:6px">ℹ️ About Project Shield</h1>
+      <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:24px">
+        CFSS Global Internship 2026
+      </p>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:900px">
+        <div class="card">
+          <div class="card-header"><span class="card-title">🎯 Project Overview</span></div>
+          <div class="card-body">
+            <p style="color:var(--text-muted);font-size:0.85rem;line-height:1.8">
+              <strong style="color:var(--text)">Project Shield</strong> is an AI-Powered Security Analytics Dashboard
+              built for the CFSS Global Internship 2026. It ingests security logs, applies machine learning models
+              to detect anomalies, and generates real-time threat scores to identify potential cyberattacks.
+            </p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><span class="card-title">🤖 AI/ML Architecture</span></div>
+          <div class="card-body">
+            <div style="font-size:0.85rem;line-height:2;color:var(--text-muted)">
+              <div>🔹 <strong style="color:var(--cyan)">Isolation Forest</strong> — Anomaly detection</div>
+              <div>🔹 <strong style="color:var(--cyan)">Random Forest</strong> — Multi-class attack classification</div>
+              <div>🔹 <strong style="color:var(--cyan)">Threat Scoring</strong> — 0–100 composite risk metric</div>
+              <div>🔹 <strong style="color:var(--cyan)">Dataset</strong> — NSL-KDD style (860 samples)</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><span class="card-title">🏗️ Tech Stack</span></div>
+          <div class="card-body">
+            <div style="font-size:0.85rem;line-height:2;color:var(--text-muted)">
+              <div>⚡ <strong style="color:var(--text)">Frontend</strong> — HTML5, Vanilla JS, CSS3, Chart.js</div>
+              <div>⚡ <strong style="color:var(--text)">Backend</strong> — Python Flask REST API</div>
+              <div>⚡ <strong style="color:var(--text)">Auth</strong> — JWT (flask-jwt-extended)</div>
+              <div>⚡ <strong style="color:var(--text)">ML</strong> — scikit-learn, NumPy, Pandas</div>
+              <div>⚡ <strong style="color:var(--text)">Security</strong> — CORS, Input validation, OWASP Top 10</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><span class="card-title">🛡️ Attack Categories</span></div>
+          <div class="card-body">
+            <div style="font-size:0.85rem;line-height:2">
+              <div><span class="badge badge-low">Normal</span> &nbsp;Legitimate traffic</div>
+              <div style="margin-top:6px"><span class="badge badge-medium">Probe</span> &nbsp;Network scanning / reconnaissance</div>
+              <div style="margin-top:6px"><span class="badge badge-high">DoS</span> &nbsp;Denial of Service floods</div>
+              <div style="margin-top:6px"><span class="badge badge-high">R2L</span> &nbsp;Remote-to-Local intrusion</div>
+              <div style="margin-top:6px"><span class="badge badge-critical">U2R</span> &nbsp;User-to-Root privilege escalation</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="grid-column:1/-1">
+          <div class="card-header"><span class="card-title">📋 SDLC & Weekly Milestones</span></div>
+          <div class="card-body">
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;text-align:center">
+              <div style="background:rgba(0,255,213,0.05);border:1px solid rgba(0,255,213,0.15);border-radius:10px;padding:16px">
+                <div style="font-size:1.5rem;margin-bottom:8px">🏗️</div>
+                <div style="font-weight:700;color:var(--cyan);font-size:0.8rem">WEEK 1</div>
+                <div style="color:var(--text-muted);font-size:0.75rem;margin-top:6px">Architecture &<br>Data Engineering</div>
+              </div>
+              <div style="background:rgba(124,58,237,0.05);border:1px solid rgba(124,58,237,0.15);border-radius:10px;padding:16px">
+                <div style="font-size:1.5rem;margin-bottom:8px">🤖</div>
+                <div style="font-weight:700;color:var(--purple);font-size:0.8rem">WEEK 2</div>
+                <div style="color:var(--text-muted);font-size:0.75rem;margin-top:6px">AI Modeling &<br>Feature Dev</div>
+              </div>
+              <div style="background:rgba(255,140,0,0.05);border:1px solid rgba(255,140,0,0.15);border-radius:10px;padding:16px">
+                <div style="font-size:1.5rem;margin-bottom:8px">🔗</div>
+                <div style="font-weight:700;color:var(--orange);font-size:0.8rem">WEEK 3</div>
+                <div style="color:var(--text-muted);font-size:0.75rem;margin-top:6px">Integration &<br>Security Testing</div>
+              </div>
+              <div style="background:rgba(0,230,118,0.05);border:1px solid rgba(0,230,118,0.15);border-radius:10px;padding:16px">
+                <div style="font-size:1.5rem;margin-bottom:8px">🚀</div>
+                <div style="font-weight:700;color:var(--green);font-size:0.8rem">WEEK 4</div>
+                <div style="color:var(--text-muted);font-size:0.75rem;margin-top:6px">Deployment &<br>Documentation</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <!-- End main-content -->
+  </div>
+</div>
+
+<!-- Scripts -->
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+<script src="js/dashboard.js"></script>
+<script>
+  // Set user avatar initial
+  document.getElementById("userAvatar").textContent =
+    (AuthManager.getUsername() || "U")[0].toUpperCase();
+</script>
+</body>
+</html>
